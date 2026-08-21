@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-datapulse}
+      POSTGRES_USER: ${POSTGRES_USER:-datapulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-datapulse}
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://datapulse:datapulse@postgres:5432/datapulse}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+    depends_on: [postgres, redis]
+    ports: ["8000:8000"]
+  frontend:
+    build: ./frontend
+    depends_on: [api]
+    ports: ["5173:5173"]
+volumes:
+  pgdata:
