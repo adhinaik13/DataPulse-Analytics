@@ -1,4 +1,4 @@
-[![CI](https://github.com/adhinaik13/DataPulse-Analytics/actions/workflows/ci.yml/badge.svg)](https://github.com/adhinaik13/DataPulse-Analytics/actions/workflows/ci.yml)
+[![CI](https://github.com/vankudothuadhinaik/DataPulse-Analytics/actions/workflows/ci.yml/badge.svg)](https://github.com/vankudothuadhinaik/DataPulse-Analytics/actions/workflows/ci.yml)
 
 # DataPulse Analytics
 
