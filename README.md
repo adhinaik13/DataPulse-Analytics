@@ -1,3 +1,5 @@
+[![CI](https://github.com/adhinaik13/DataPulse-Analytics/actions/workflows/ci.yml/badge.svg)](https://github.com/adhinaik13/DataPulse-Analytics/actions/workflows/ci.yml)
+
 # DataPulse Analytics
 
 A portfolio-scale event analytics demo with a FastAPI backend, SQLAlchemy persistence, PostgreSQL via Docker Compose, and a React/TypeScript dashboard.
