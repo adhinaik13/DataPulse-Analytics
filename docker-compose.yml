@@ -15,7 +15,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://datapulse:datapulse@postgres:5432/datapulse}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      JWT_SECRET: ${JWT_SECRET:-change-me}
+      DATAPULSE_AUTO_CREATE_TABLES: "true"
     depends_on: [postgres, redis]
     ports: ["8000:8000"]
   frontend:

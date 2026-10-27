@@ -1,15 +1,27 @@
 import os
+from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .db import Base, engine, get_db
 from .models import Event
 from .schemas import EventIn, Metrics
 
-app = FastAPI(title="DataPulse Analytics API", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # Convenience for the local Compose demo only. Tests and other environments
+    # should manage schema setup explicitly (and production should use migrations).
+    if os.getenv("DATAPULSE_AUTO_CREATE_TABLES", "").strip().lower() == "true":
+        Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title="DataPulse Analytics API", version="1.0.0", lifespan=lifespan)
 
 allowed_origins = [
     origin.strip()
@@ -27,9 +39,6 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
-# For this demo, create tables automatically. Use migrations for production.
-Base.metadata.create_all(bind=engine)
-
 
 @app.get("/health")
 def health() -> dict[str, str]:
@@ -39,9 +48,16 @@ def health() -> dict[str, str]:
 @app.post("/events", status_code=201)
 def ingest(event: EventIn, db: Session = Depends(get_db)) -> dict[str, int]:
     obj = Event(**event.model_dump(exclude_none=True))
-    db.add(obj)
-    db.commit()
-    db.refresh(obj)
+    try:
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=503,
+            detail="Event could not be persisted; please retry.",
+        ) from exc
     return {"id": obj.id}
 
 
