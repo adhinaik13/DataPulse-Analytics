@@ -2,7 +2,9 @@ import os
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .db import Base, engine, get_db
@@ -34,6 +36,19 @@ Base.metadata.create_all(bind=engine)
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/health/ready")
+def readiness(db: Session = Depends(get_db)) -> dict[str, str] | JSONResponse:
+    """Report readiness only when the database dependency can answer a query."""
+    try:
+        db.execute(select(1))
+    except SQLAlchemyError:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unavailable", "dependency": "database"},
+        )
+    return {"status": "ready"}
 
 
 @app.post("/events", status_code=201)
