@@ -49,8 +49,10 @@ app.add_middleware(
     allow_headers=["Content-Type", "X-API-Key"],
 )
 
-# For this demo, create tables automatically. Use migrations for production.
-Base.metadata.create_all(bind=engine)
+# Keep automatic schema creation local-only. Production schema changes must be
+# applied by the release migration step (alembic upgrade head), not each API worker.
+if os.getenv("ENVIRONMENT", "development").strip().lower() not in {"production", "prod"}:
+    Base.metadata.create_all(bind=engine)
 
 
 @app.get("/health")
