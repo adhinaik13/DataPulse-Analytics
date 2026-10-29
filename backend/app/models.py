@@ -8,6 +8,7 @@ from .db import Base
 
 class Event(Base):
     __tablename__ = "events"
+    __table_args__ = (Index("ix_events_time_name", "occurred_at", "event_name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     event_name: Mapped[str] = mapped_column(String(80), index=True)
@@ -21,6 +22,3 @@ class Event(Base):
     )
     value: Mapped[float] = mapped_column(Float, default=0, server_default="0")
     occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
-
-
-Index("ix_events_time_name", "occurred_at", "event_name")
