@@ -23,7 +23,7 @@ Interactive API documentation is available at `/docs` when the backend is runnin
 - Docker Compose for local services
 - Pytest and GitHub Actions for backend endpoint and validation tests
 
-Redis is included in the local Compose environment and configured through `REDIS_URL`, but the current API code does not yet use Redis for caching, queues, or analytics. The API supports a shared API key for event ingestion and analytics routes; this is a simple service-level gate, not user identity, role-based authorization, or a full account system. Production database migrations and ingestion rate limits remain future work. The readiness endpoint is a dependency check, not a deployment-readiness guarantee.
+Redis is included in the local Compose environment and configured through `REDIS_URL`, but the current API code does not yet use Redis for caching, queues, or analytics. The API supports a shared API key for event ingestion and analytics routes; this is a simple service-level gate, not user identity, role-based authorization, or a full account system. Versioned Alembic migrations are provided for the `events` schema; production must apply them as a release step before starting the API, and the API no longer runs `create_all` when `ENVIRONMENT=production` or `prod`. Ingestion rate limiting and full user authorization remain future work. The readiness endpoint is a dependency check, not a deployment-readiness guarantee.
 
 ## Run locally
 
@@ -57,7 +57,7 @@ The tests use an isolated in-memory SQLite database and cover health, event inge
 
 Review `.env.example` before deployment. The credentials in Compose defaults are for local development only; replace them for any shared or hosted environment and keep real secrets out of Git.
 
-For a hosted backend, configure `DATAPULSE_API_KEY` as a secret and set `ENVIRONMENT=production`. Send the configured key in the `X-API-Key` header for `POST /events`, `GET /analytics/metrics`, and `GET /analytics/top-events`. In production mode, these routes return HTTP 503 if the key is not configured and HTTP 401 if the supplied key is missing or incorrect. Health endpoints remain unauthenticated for orchestration. Use HTTPS and a secret manager; do not put the key in source control or a public frontend bundle.
+For a hosted backend, configure `DATAPULSE_API_KEY` as a secret and set `ENVIRONMENT=production`. Before starting the API on a new or upgraded database, run `cd backend && alembic upgrade head` as a controlled release step; CI checks the initial migration against PostgreSQL and runs `alembic check`. Send the configured key in the `X-API-Key` header for `POST /events`, `GET /analytics/metrics`, and `GET /analytics/top-events`. In production mode, these routes return HTTP 503 if the key is not configured and HTTP 401 if the supplied key is missing or incorrect. Health endpoints remain unauthenticated for orchestration. Use HTTPS and a secret manager; do not put the key in source control or a public frontend bundle.
 
 ## Scope
 
