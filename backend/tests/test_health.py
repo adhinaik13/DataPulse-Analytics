@@ -94,6 +94,18 @@ def test_rejects_invalid_event_values():
     )
     assert response.status_code == 422
 
+    for value in ("Infinity", "-Infinity", "NaN"):
+        response = client.post(
+            "/events",
+            json={
+                "event_name": "purchase",
+                "user_id": "user-1",
+                "session_id": "session-1",
+                "value": value,
+            },
+        )
+        assert response.status_code == 422
+
 
 def test_rejects_blank_required_fields_and_unknown_fields():
     blank = client.post(
