@@ -94,7 +94,7 @@ def test_rejects_invalid_event_values():
     )
     assert response.status_code == 422
 
-    for value in (float("inf"), float("-inf"), float("nan")):
+    for value in ("Infinity", "-Infinity", "NaN"):
         response = client.post(
             "/events",
             json={
