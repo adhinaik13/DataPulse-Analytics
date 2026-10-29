@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -42,6 +43,36 @@ def test_health_endpoint():
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_readiness_endpoint_checks_database():
+    response = client.get("/health/ready")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ready"}
+
+
+def test_readiness_endpoint_returns_503_when_database_fails():
+    class UnavailableDB:
+        def execute(self, *args, **kwargs):
+            raise SQLAlchemyError("database unavailable")
+
+        def close(self):
+            pass
+
+    def override_unavailable_db():
+        yield UnavailableDB()
+
+    app.dependency_overrides[get_db] = override_unavailable_db
+    try:
+        response = client.get("/health/ready")
+    finally:
+        app.dependency_overrides[get_db] = override_get_db
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "unavailable",
+        "dependency": "database",
+    }
 
 
 def test_ingestion_and_analytics_endpoints():
