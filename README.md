@@ -23,7 +23,7 @@ Interactive API documentation is available at `/docs` when the backend is runnin
 - Docker Compose for local services
 - Pytest and GitHub Actions for backend endpoint and validation tests
 
-Redis is included in the local Compose environment and configured through `REDIS_URL`, but the current API code does not yet use Redis for caching, queues, or analytics. Authentication, authorization, production migrations, and robust event-ingestion controls are also not implemented and should not be assumed. The readiness endpoint is a dependency check, not an authentication or deployment-readiness guarantee.
+Redis is included in the local Compose environment and configured through `REDIS_URL`, but the current API code does not yet use Redis for caching, queues, or analytics. The API supports a shared API key for event ingestion and analytics routes; this is a simple service-level gate, not user identity, role-based authorization, or a full account system. Production database migrations and ingestion rate limits remain future work. The readiness endpoint is a dependency check, not a deployment-readiness guarantee.
 
 ## Run locally
 
@@ -56,6 +56,8 @@ The tests use an isolated in-memory SQLite database and cover health, event inge
 ## Configuration and safety
 
 Review `.env.example` before deployment. The credentials in Compose defaults are for local development only; replace them for any shared or hosted environment and keep real secrets out of Git.
+
+For a hosted backend, configure `DATAPULSE_API_KEY` as a secret and set `ENVIRONMENT=production`. Send the configured key in the `X-API-Key` header for `POST /events`, `GET /analytics/metrics`, and `GET /analytics/top-events`. In production mode, these routes return HTTP 503 if the key is not configured and HTTP 401 if the supplied key is missing or incorrect. Health endpoints remain unauthenticated for orchestration. Use HTTPS and a secret manager; do not put the key in source control or a public frontend bundle.
 
 ## Scope
 

@@ -1,4 +1,7 @@
 import os
+import secrets
+
+from fastapi import Header, HTTPException
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +15,23 @@ from .models import Event
 from .schemas import EventIn, Metrics
 
 app = FastAPI(title="DataPulse Analytics API", version="1.0.0")
+
+
+def require_api_key(x_api_key: str | None = Header(default=None)) -> None:
+    """Require a configured API key outside local development.
+
+    Set DATAPULSE_API_KEY to protect ingestion and analytics routes. In a
+    production environment, refusing requests without a configured key avoids
+    accidentally exposing the demo API with authentication disabled.
+    """
+    expected = os.getenv("DATAPULSE_API_KEY")
+    environment = os.getenv("ENVIRONMENT", "development").strip().lower()
+    if not expected:
+        if environment in {"production", "prod"}:
+            raise HTTPException(status_code=503, detail="API authentication is not configured")
+        return
+    if not x_api_key or not secrets.compare_digest(x_api_key, expected):
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 allowed_origins = [
     origin.strip()
@@ -51,7 +71,7 @@ def readiness(db: Session = Depends(get_db)):
     return {"status": "ready"}
 
 
-@app.post("/events", status_code=201)
+@app.post("/events", status_code=201, dependencies=[Depends(require_api_key)])
 def ingest(event: EventIn, db: Session = Depends(get_db)) -> dict[str, int]:
     obj = Event(**event.model_dump(exclude_none=True))
     db.add(obj)
@@ -60,7 +80,7 @@ def ingest(event: EventIn, db: Session = Depends(get_db)) -> dict[str, int]:
     return {"id": obj.id}
 
 
-@app.get("/analytics/metrics", response_model=Metrics)
+@app.get("/analytics/metrics", response_model=Metrics, dependencies=[Depends(require_api_key)])
 def metrics(db: Session = Depends(get_db)) -> Metrics:
     return Metrics(
         events=db.scalar(select(func.count(Event.id))) or 0,
@@ -70,7 +90,7 @@ def metrics(db: Session = Depends(get_db)) -> Metrics:
     )
 
 
-@app.get("/analytics/top-events")
+@app.get("/analytics/top-events", dependencies=[Depends(require_api_key)])
 def top_events(db: Session = Depends(get_db)) -> list[dict[str, int | str]]:
     rows = db.execute(
         select(Event.event_name, func.count(Event.id).label("count"))

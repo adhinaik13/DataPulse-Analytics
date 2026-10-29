@@ -166,3 +166,31 @@ def test_cors_allows_local_dashboard_origin():
     )
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+
+def test_protected_routes_require_configured_api_key(monkeypatch):
+    monkeypatch.setenv("DATAPULSE_API_KEY", "test-secret")
+    monkeypatch.setenv("ENVIRONMENT", "production")
+
+    missing = client.get("/analytics/metrics")
+    invalid = client.post(
+        "/events",
+        headers={"X-API-Key": "wrong"},
+        json={"event_name": "purchase", "user_id": "u1", "session_id": "s1"},
+    )
+    valid = client.get("/analytics/metrics", headers={"X-API-Key": "test-secret"})
+
+    assert missing.status_code == 401
+    assert invalid.status_code == 401
+    assert valid.status_code == 200
+
+
+def test_production_fails_closed_when_api_key_is_not_configured(monkeypatch):
+    monkeypatch.delenv("DATAPULSE_API_KEY", raising=False)
+    monkeypatch.setenv("ENVIRONMENT", "production")
+
+    response = client.get("/analytics/metrics")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "API authentication is not configured"}
