@@ -4,9 +4,9 @@ DataPulse is a demo analytics service. The current application calls SQLAlchemy 
 
 ## Required before production deployment
 
-- Replace startup schema creation with Alembic migrations and reviewable migration revisions.
-- Run migrations as a controlled release step, not independently in every API worker.
-- Add integration tests against the same database engine used in deployment; SQLite-only tests cannot establish PostgreSQL behavior for all constraints and transactions.
+- Apply the versioned Alembic migration (`alembic upgrade head`) as a controlled release step, not independently in every API worker.
+- Keep automatic `Base.metadata.create_all` limited to development/test environments; production startup must not silently mutate schema.
+- CI applies the initial migration to PostgreSQL 16 and runs `alembic check`; endpoint tests still use SQLite, so this does not replace full PostgreSQL API integration coverage.
 - Keep `/health` as a liveness check and `/health/ready` as a dependency-aware readiness check.
 - Configure explicit CORS origins per environment; do not use wildcard origins with credentials.
 - Add authentication and authorization before exposing ingestion or analytics endpoints to untrusted clients.
