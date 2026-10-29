@@ -194,3 +194,31 @@ def test_production_fails_closed_when_api_key_is_not_configured(monkeypatch):
 
     assert response.status_code == 503
     assert response.json() == {"detail": "API authentication is not configured"}
+
+
+def test_cors_preflight_allows_api_key_header():
+    response = client.options(
+        "/analytics/metrics",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "x-api-key",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+    assert "x-api-key" in response.headers["access-control-allow-headers"].lower()
+
+
+def test_cors_does_not_reflect_unconfigured_origin():
+    response = client.options(
+        "/analytics/metrics",
+        headers={
+            "Origin": "https://untrusted.example",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "x-api-key",
+        },
+    )
+
+    assert "access-control-allow-origin" not in response.headers
