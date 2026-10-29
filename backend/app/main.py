@@ -39,7 +39,7 @@ def health() -> dict[str, str]:
 
 
 @app.get("/health/ready")
-def readiness(db: Session = Depends(get_db)) -> dict[str, str] | JSONResponse:
+def readiness(db: Session = Depends(get_db)):
     """Report readiness only when the database dependency can answer a query."""
     try:
         db.execute(select(1))
