@@ -6,7 +6,8 @@ A portfolio-scale event analytics demo with a FastAPI backend, SQLAlchemy persis
 
 ## Implemented API
 
-- `GET /health` — simple service health response.
+- `GET /health` — lightweight liveness response.
+- `GET /health/ready` — checks that the database can answer a query; returns HTTP 503 when the database is unavailable.
 - `POST /events` — validates and persists an event record; rejects blank/oversized identifiers, unknown fields, negative values, and non-finite event values.
 - `GET /analytics/metrics` — aggregates event, distinct-user, distinct-session, and event-value totals.
 - `GET /analytics/top-events` — returns the ten most common event names with deterministic tie ordering.
@@ -22,7 +23,7 @@ Interactive API documentation is available at `/docs` when the backend is runnin
 - Docker Compose for local services
 - Pytest and GitHub Actions for backend endpoint and validation tests
 
-Redis is included in the local Compose environment and configured through `REDIS_URL`, but the current API code does not yet use Redis for caching, queues, or analytics. Authentication, authorization, production migrations, and robust event-ingestion controls are also not implemented and should not be assumed.
+Redis is included in the local Compose environment and configured through `REDIS_URL`, but the current API code does not yet use Redis for caching, queues, or analytics. Authentication, authorization, production migrations, and robust event-ingestion controls are also not implemented and should not be assumed. The readiness endpoint is a dependency check, not an authentication or deployment-readiness guarantee.
 
 ## Run locally
 
